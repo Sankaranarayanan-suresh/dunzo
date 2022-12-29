@@ -1,11 +1,9 @@
 package com.users.rider;
 
-import com.Notification;
 import com.application.Application;
 import com.users.Users;
 import com.utils.Utils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -13,10 +11,26 @@ import java.util.Scanner;
 public class Rider extends Users {
 
     private boolean available;
+    private double ratings;
+
+    public double getRatings() {
+        return ratings;
+    }
+
+    public void setRatings(double ratings) {
+        this.ratings = ratings;
+    }
+
+    public Application.Job getCurrentJob() {
+        return currentJob;
+    }
+
+    public void setCurrentJob(Application.Job currentJob) {
+        this.currentJob = currentJob;
+    }
+
     private Application.Job currentJob;
     private final RiderInterface riderRequest;
-    private final List<Notification> notifications = new ArrayList<>();
-
     public Rider(String riderName, Long phoneNumber, String emailId, RiderInterface riderRequest) {
         super(phoneNumber.hashCode(),riderName,phoneNumber,emailId);
         this.riderRequest = riderRequest;
@@ -28,8 +42,13 @@ public class Rider extends Users {
         this.available = false;
 
     }
-    public void addNotification(Notification notification){
-        notifications.add(notification);
+    @Override
+    public String toString() {
+        return  "RiderId      :" + this.getId() +"\n"+
+                "RiderName    :" + this.getName() +"\n"+
+                "phoneNumber  :" + this.getPhoneNumber() + "\n"+
+                "emailId      :" + this.getEmailId() +"\n"+
+                "Ratings      :" + this.getRatings() +"\n";
     }
     public boolean isAvailable() {
         return available;
@@ -86,37 +105,37 @@ public class Rider extends Users {
 
     @Override
     public void viewHistory() {
-        List<Application.Job> history =  riderRequest.fetchJobList(this.getId());
+        List<Application.Job> history =  riderRequest.fetchJobList(this.getPhoneNumber());
         if (history.size() == 0)
             System.out.println("No previous jobs");
         for (Application.Job jobs : history) {
             System.out.println(jobs + "\n");
         }
     }
-
-    @Override
-    public void viewProfile() {
-        System.out.println(this);
-    }
-
-    @Override
-    public void viewNotification() {
-        for (Notification notification:notifications) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            System.out.println(notification);
-            notifications.remove(notification);
-        }
-    }
-
     private void viewJob() {
         System.out.println(currentJob.toString());
+        System.out.println("1.Change state of the object\n2.Exit");
+        int riderDecision = Utils.getInteger();
+        if(riderDecision == 1){
+            System.out.println("1.Picked-Up\n2.Delivered\n3.Not delivered");
+            int objectState = Utils.getInteger();
+            if (objectState == 1){
+                riderRequest.changeJobState(currentJob,"Picked-Up");
+            } else if (objectState == 2) {
+                riderRequest.changeJobState(currentJob,"Delivered");
+            }
+            else if (objectState == 3){
+                System.out.println("State the exact reason: ");
+                String reason = new Scanner(System.in).nextLine();
+                riderRequest.changeJobState(currentJob,"Not delivered",reason);
+            }
+        }
+
+        System.out.println(currentJob.toString());
+
     }
     private void cancelJob() {
-        riderRequest.cancelJob();
+        riderRequest.cancelJob(this.getPhoneNumber(),this.currentJob);
     }
 
 

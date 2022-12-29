@@ -1,6 +1,6 @@
 package com.users.customer;
 
-import com.Notification;
+import com.notification.Notification;
 import com.application.Application;
 import com.users.Users;
 import com.utils.Utils;
@@ -11,45 +11,22 @@ import java.util.Scanner;
 
 public class Customer extends Users {
     private final CustomerInterface customerRequest;
-    private final List<Notification> notifications = new ArrayList<>();
     public Customer(String customerName, Long phoneNumber, String emailId,CustomerInterface customerRequest) {
         super(phoneNumber.hashCode(),customerName,phoneNumber,emailId);
         this.customerRequest = customerRequest;
-    }
-
-    public void addNotification(Notification notification){
-        notifications.add(notification);
     }
     private void trackOrder(){
 
     }
     @Override
     public void viewHistory(){
-       List<Application.Job> history =  customerRequest.fetchJobList(this.getId());
+       List<Application.Job> history =  customerRequest.fetchJobList(this.getPhoneNumber());
         if (history.size() == 0)
             System.out.println("No previous jobs");
         for (Application.Job jobs : history) {
             System.out.println(jobs + "\n");
         }
     }
-    @Override
-    public void viewProfile(){
-        System.out.println(this);
-    }
-
-    @Override
-    public void viewNotification() {
-        for (Notification notification:notifications) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
-            }
-            System.out.println(notification);
-            notifications.remove(notification);
-        }
-    }
-
     private void bookService(){
         System.out.print("Enter Object Name: ");
         String objectName = new Scanner(System.in).nextLine();
@@ -77,7 +54,7 @@ public class Customer extends Users {
         String confirmBooking =  new Scanner(System.in).nextLine();
         if (confirmBooking.equalsIgnoreCase("y")){
             customerRequest.bookAService(objectName,objectDescription,objectDimension,
-                    pickUpPincode,dropPincode,this.getId());
+                    pickUpPincode,dropPincode,this.getPhoneNumber());
         }
     }
 
@@ -137,7 +114,7 @@ public class Customer extends Users {
         }
     }
     public void driverFunction(){
-        System.out.println("You have " +notifications.size()+ " notifications");
+        System.out.println("You have " +this.notifications.size()+ " notifications");
         driverFunction:while (true){
            System.out.println("\n1.Edit My profile\n2.Book a service\n3.Track My Order\n4.View Notifications\n5.View my Profile\n" +
                    "6.View History\n7.Sign-Out");
