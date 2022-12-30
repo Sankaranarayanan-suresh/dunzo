@@ -1,8 +1,10 @@
 package com.application;
 
+import com.users.applicant.Applicant;
 import com.users.Users;
 import com.users.rider.Rider;
 
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -20,14 +22,30 @@ public class Database {
 
     private Database() {
     }
+    private final List<String> nonTransferableThings = new ArrayList<String>(){{
+       add("jewel");
+       add("cash");
+       add("phone");
+       add("laptop");
+    }};
     private final HashMap<Long, Users> userDataBase = new HashMap<>();
     private final HashMap<Integer, Application.Job> jobDatabase  = new HashMap<>();
     private final HashMap<Long,Application.Job> currentlyRunningJobs = new HashMap<>();
     private final HashMap<Long,String>usersCredentials = new HashMap<>();
+    private final List<Applicant> approvalList = new ArrayList<>();
 
     public void addUser(Users newUser, String password){
         this.usersCredentials.put(newUser.getPhoneNumber(),password);
         this.userDataBase.put(newUser.getPhoneNumber(),newUser);
+    }
+    public void addToApprovalList(Applicant newApplicant){
+        approvalList.add(newApplicant);
+    }
+    public List<Applicant> getApplicants(){
+        return approvalList;
+    }
+    public List<String> getNonTransferableThings(){
+        return nonTransferableThings;
     }
     public HashMap<Long, Users> getUsers(){
         return userDataBase;
@@ -35,11 +53,16 @@ public class Database {
     public Collection<Application.Job> getJobDatabase() {
         return jobDatabase.values();
     }
-    public List<Rider> getRiders(){
+    public List<Rider> getRiders(int pickUpPincode,int dropPincode) {
         List<Rider> availableRiders = new ArrayList<>();
-        for (Users users: userDataBase.values()) {
-            if (users instanceof Rider && ((Rider) users).isAvailable()){
-                availableRiders.add((Rider) users);
+        for (Users users : userDataBase.values()) {
+            if (users instanceof Rider && ((Rider) users).isAvailable()) {
+                if (Math.abs(((Rider) users).getServiceLocation() - pickUpPincode) <= 100
+                        && Math.abs(((Rider) users).getServiceLocation() - dropPincode) <= 100) {
+
+                                availableRiders.add((Rider) users);
+
+                }
             }
         }
         return availableRiders;

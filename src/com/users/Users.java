@@ -52,14 +52,19 @@ public abstract class Users {
     }
 
     public void viewNotification() {
-        for (Notification notification : notifications) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+        System.out.println("running");
+        if (notifications.size()>0){
+            for (Notification notification : notifications) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
+                }
+                System.out.println(notification.getNotificationMessage());
             }
-            System.out.println(notification.getNotificationMessage());
-            notifications.remove(notification);
+            notifications.clear();
+        }else {
+            System.out.println("You have no new notifications!!\n");
         }
     }
     public void viewProfile() {
@@ -68,5 +73,5 @@ public abstract class Users {
 
     public abstract void editProfile();
     public abstract void viewHistory();
-    public abstract void driverFunction();
+    public abstract void showMenu();
 }

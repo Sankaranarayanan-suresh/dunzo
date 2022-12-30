@@ -1,7 +1,5 @@
 package com.utils;
-
-import sun.security.util.Length;
-
+import java.util.InputMismatchException;
 import java.util.Scanner;
 
 public class Utils {
@@ -29,4 +27,22 @@ public class Utils {
             return getPhoneNumber();
         }
     }
+    public static double getRatings() {
+        Scanner sc = new Scanner(System.in);
+        try {
+            double rating = sc.nextDouble();
+            if (rating > 5){
+                throw new RatingErrorException(" Ratings should be between 0-5");
+            }
+            return sc.nextDouble();
+        } catch (InputMismatchException e) {
+            System.err.println("Enter valid option!!.");
+            return getRatings();
+        }
+        catch (RatingErrorException e) {
+            System.err.println(e.getMessage());
+            return getRatings();
+        }
+    }
 }
+

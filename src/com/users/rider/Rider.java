@@ -10,6 +10,12 @@ import java.util.Scanner;
 
 public class Rider extends Users {
 
+    private final int serviceLocation;
+
+    public int getServiceLocation() {
+        return serviceLocation;
+    }
+
     private boolean available;
     private double ratings;
 
@@ -31,8 +37,9 @@ public class Rider extends Users {
 
     private Application.Job currentJob;
     private final RiderInterface riderRequest;
-    public Rider(String riderName, Long phoneNumber, String emailId, RiderInterface riderRequest) {
+    public Rider(String riderName, Long phoneNumber, String emailId,int serviceLocation, RiderInterface riderRequest) {
         super(phoneNumber.hashCode(),riderName,phoneNumber,emailId);
+        this.serviceLocation = serviceLocation;
         this.riderRequest = riderRequest;
     }
     public void addJob(Application.Job job){
@@ -113,7 +120,12 @@ public class Rider extends Users {
         }
     }
     private void viewJob() {
-        System.out.println(currentJob.toString());
+        try {
+            System.out.println(currentJob.toString());
+        }
+        catch (NullPointerException e){
+            System.out.println("Currently You have no jobs to complete.");
+        }
         System.out.println("1.Change state of the object\n2.Exit");
         int riderDecision = Utils.getInteger();
         if(riderDecision == 1){
@@ -140,7 +152,7 @@ public class Rider extends Users {
 
 
     @Override
-    public void driverFunction() {
+    public void showMenu() {
         System.out.println("You have " +notifications.size()+ " notifications");
         driverFunction:while (true){
             System.out.println("\n1.Edit My profile\n2.View Job\n3.Cancel Job \n4.View Notification\n5.View my Profile\n" +

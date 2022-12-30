@@ -1,23 +1,16 @@
 package com.users.admin;
 
-import com.users.Applicant;
+import com.users.applicant.Applicant;
 import com.users.Users;
 import com.users.rider.Rider;
 import com.utils.Utils;
-
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 
 public class Admin extends Users {
-    private AdminInterface adminRequest;
-    private final List<Applicant> approvalList = new ArrayList<>();
+    private final AdminInterface adminRequest;
     public Admin(String name, Long phoneNumber, String emailId, AdminInterface adminRequest) {
         super(phoneNumber.hashCode(),name,phoneNumber,emailId);
         this.adminRequest = adminRequest;
-    }
-    public void addToApprovalList(Applicant newApplicant){
-        approvalList.add(newApplicant);
     }
     @Override
     public void editProfile() {
@@ -72,34 +65,52 @@ public class Admin extends Users {
         System.out.println("Ypu have Logged in as admin. You Don't have any history.");
     }
     private void addRider(){
-        for (Applicant applicant: approvalList) {
-            System.out.println(applicant);
-            System.out.println("1.Add to rider database\t2.Remove from the list");
-            int adminDecision = Utils.getInteger();
-            if (adminDecision == 1){
-                adminRequest.addRiderToDatabase(applicant);
+        if (adminRequest.getAllApplicants().size() >0){
+            for (Applicant applicant: adminRequest.getAllApplicants()) {
+                System.out.println(applicant);
+                System.out.println("1.Add to rider database\n2.Remove from the list");
+                int adminDecision = Utils.getInteger();
+                if (adminDecision == 1){
+                    adminRequest.addRiderToDatabase(applicant);
+                    System.out.println("Rider Added to database.");
+                }
+                else{
+                    adminRequest.getAllApplicants().remove(applicant);
+                }
             }
-            else{
-                approvalList.remove(applicant);
-            }
+        }
+        else {
+            System.out.println("\nNo riders to add\n");
         }
     }
     private void removeRider(){
-        int i=1;
-        for (Rider rider:adminRequest.getAllRiders()) {
-            System.out.println(i+"."+rider.getName()+":"+ rider.getRatings());
-        }
-        System.out.println("Select the rider you want to remove!");
-        int riderIndex = Utils.getInteger();
-        Rider rider = adminRequest.getAllRiders().get(riderIndex);
-        String comment = adminRequest.removeRiderFromDatabase(rider);
-        System.out.println(comment);
+       if (adminRequest.getAllRiders().size()>0){
+           int i=1;
+           for (Rider rider:adminRequest.getAllRiders()) {
+               System.out.println(i+"."+rider.getName()+": "+ rider.getRatings());
+           }
+           System.out.println("Select the rider you want to remove!");
+           int riderIndex = Utils.getInteger();
+           Rider rider = adminRequest.getAllRiders().get(riderIndex + 1);
+           String comment = adminRequest.removeRiderFromDatabase(rider);
+           System.out.println(comment);
+       }
+       else {
+           System.out.println("\nNo rider to remove!!\n");
+       }
+    }
+    public String toString() {
+        return  "AdminId      :" + this.getId() +"\n"+
+                "AdminName    :" + this.getName() +"\n"+
+                "phoneNumber  :" + this.getPhoneNumber() + "\n"+
+                "emailId      :" + this.getEmailId() +"\n";
     }
     @Override
-    public void driverFunction() {
+    public void showMenu() {
+        System.out.println("You have "+notifications.size()+" number of notifications.");
        adminDriverFunction:while (true){
            System.out.println("1.Edit Profile\n2.Add Riders\n3.Remove Rider\n4.View Notifications\n5.View my Profile\n" +
-                   "6.View History\n7.Sign-Out");
+                   "6.Sign-Out");
            int adminPreference = Utils.getInteger();
            switch (adminPreference){
                case 1:
@@ -118,9 +129,6 @@ public class Admin extends Users {
                    viewProfile();
                    break ;
                case 6:
-                   viewHistory();
-                   break ;
-               case 7:
                    break adminDriverFunction;
            }
        }

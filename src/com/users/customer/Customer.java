@@ -1,11 +1,8 @@
 package com.users.customer;
 
-import com.notification.Notification;
 import com.application.Application;
 import com.users.Users;
 import com.utils.Utils;
-
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
@@ -49,10 +46,21 @@ public class Customer extends Users {
         System.out.print("Enter Drop location pincode: ");
         int dropPincode = Utils.getInteger();
 
-//        System.out.println("Do you have any preferences");
+        System.out.println("Do you need any specific rating for the rider?(y/n)");
+        double rating = 0;
+        String ratingPreference = new Scanner(System.in).nextLine();
+        if (ratingPreference.equalsIgnoreCase("y")){
+            System.out.println("Enter minimum rating: ");
+            rating = Utils.getRatings();
+
+        }
         System.out.println("Confirm Booking?(y/n)");
         String confirmBooking =  new Scanner(System.in).nextLine();
-        if (confirmBooking.equalsIgnoreCase("y")){
+        if (confirmBooking.equalsIgnoreCase("y") && ratingPreference.equalsIgnoreCase("y")){
+            customerRequest.bookAService(objectName,objectDescription,objectDimension,
+                    pickUpPincode,dropPincode,this.getPhoneNumber(),rating);
+        }
+        else if (confirmBooking.equalsIgnoreCase("y")){
             customerRequest.bookAService(objectName,objectDescription,objectDimension,
                     pickUpPincode,dropPincode,this.getPhoneNumber());
         }
@@ -113,7 +121,7 @@ public class Customer extends Users {
             }
         }
     }
-    public void driverFunction(){
+    public void showMenu(){
         System.out.println("You have " +this.notifications.size()+ " notifications");
         driverFunction:while (true){
            System.out.println("\n1.Edit My profile\n2.Book a service\n3.Track My Order\n4.View Notifications\n5.View my Profile\n" +
