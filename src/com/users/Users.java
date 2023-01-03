@@ -52,7 +52,6 @@ public abstract class Users {
     }
 
     public void viewNotification() {
-        System.out.println("running");
         if (notifications.size()>0){
             for (Notification notification : notifications) {
                 try {

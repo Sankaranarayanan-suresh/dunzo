@@ -105,7 +105,7 @@ public class Application implements ApplicationInterface {
                     String mail = new Scanner(System.in).nextLine();
                     System.out.println("Enter your service location: ");
                     int serviceLocation = Utils.getInteger();
-                    Applicant applicant = new Applicant(name, phoneNumber, serviceLocation,mail);
+                    Applicant applicant = new Applicant(name, phoneNumber, serviceLocation, mail);
                     db.addToApprovalList(applicant);
                     db.getUsers().get(admin.getPhoneNumber()).pushNotification(new Notification()
                             .setNotificationMessage(applicant.getName() + " has requested as rider."));
@@ -165,7 +165,7 @@ public class Application implements ApplicationInterface {
 
     @Override
     public List<Job> fetchJobList(Long phoneNumber) {
-        List<Job> jobs = (List<Job>) db.getJobDatabase();
+        List<Job> jobs = new ArrayList<>(db.getJobDatabase());
         List<Job> userHistoryOfJobs = new ArrayList<>();
         for (Job job : jobs) {
             if (job.customerNumber.equals(phoneNumber) || job.riderNumber.equals(phoneNumber)) {
@@ -177,16 +177,18 @@ public class Application implements ApplicationInterface {
 
     @Override
     public void addRiderToDatabase(Applicant applicant) {
-        Rider newRider = new Rider(applicant.getName(), applicant.getPhoneNumber(), applicant.getEmailId(), applicant.getServiceLocation(),this);
+        Rider newRider = new Rider(applicant.getName(), applicant.getPhoneNumber(), applicant.getEmailId(), applicant.getServiceLocation(), this);
         db.addUser(newRider, "0000");
         db.getUsers().get(newRider.getPhoneNumber()).pushNotification(new Notification()
                 .setNotificationMessage("Hey " + newRider.getName() + "!!!\nWelcome to Dunzo Family!!\nYour application as Rider has been accepted."));
+        db.getApplicants().remove(applicant);
     }
 
     @Override
     public String removeRiderFromDatabase(Rider rider) {
         if (rider.getRatings() < 1.0) {
             db.getUsers().remove(rider.getPhoneNumber());
+            db.getUsersCredentials().remove(rider.getPhoneNumber());
             return "Rider removed Successfully";
         } else {
             return "Cannot remove rider.";
@@ -201,6 +203,11 @@ public class Application implements ApplicationInterface {
     @Override
     public List<Rider> getAllRiders() {
         return db.getAllRiders();
+    }
+
+    @Override
+    public void removeApplicant(Applicant applicant) {
+        db.getApplicants().remove(applicant);
     }
 
     private boolean checkCredentials(long phoneNumber, String password) {
@@ -236,79 +243,143 @@ public class Application implements ApplicationInterface {
     }
 
     @Override
-    public void bookAService(String objectName, String objectDescription, int objectDimension,
-                             int pickUpPincode, int dropPincode, Long customerNumber) {
-        List<Rider> riderList = db.getRiders(pickUpPincode,dropPincode);
-        if (riderList.size() > 0) {
-            Random random = new Random();
-            int riderIndex = random.nextInt(riderList.size());
-            Rider assignedRider = riderList.get(riderIndex);
-            if(checkObjectEligibility(objectName.toLowerCase(),objectDimension)){
-                Job job = new Job(objectName, objectDescription, objectDimension,
-                        customerNumber, pickUpPincode, dropPincode, assignedRider.getPhoneNumber());
-                assignedRider.addJob(job);
-                db.addJobs(job);
-                db.addToCurrentlyRunningJobs(job, assignedRider.getPhoneNumber());
-                sendBookingNotification(customerNumber, assignedRider.getPhoneNumber());
-            }
-            else {
-                System.err.println("Object cannot be transferred!!");
-            }
-        } else {
+    public boolean bookAService(String objectName, String objectDescription, int objectDimension,
+                                int pickUpPincode, int dropPincode, Long customerNumber) {
+        List<Rider> riderList = db.getRiders(pickUpPincode, dropPincode);
+        if (riderList.size() == 0) {
             System.out.println("No riders available");
+            return false;
         }
+
+        Random random = new Random();
+        int riderIndex = random.nextInt(riderList.size());
+        Rider assignedRider = riderList.get(riderIndex);
+
+        if (!checkObjectEligibility(objectName.toLowerCase(), objectDimension)) {
+            System.err.println("Object cannot be transferred!!");
+            return false;
+        }
+
+        Job job = new Job(objectName, objectDescription, objectDimension,
+                customerNumber, pickUpPincode, dropPincode, assignedRider.getPhoneNumber());
+        assignedRider.addJob(job);
+        db.addJobs(job);
+        db.addToCurrentlyRunningJobs(job, assignedRider.getPhoneNumber());
+        sendBookingNotification(customerNumber, assignedRider.getPhoneNumber(), job);
+        return true;
     }
-    private boolean checkObjectEligibility(String objectName,int objectDimension){
+
+    private boolean checkObjectEligibility(String objectName, int objectDimension) {
         return !db.getNonTransferableThings().contains(objectName) && objectDimension <= 1000;
     }
+
     @Override
-    public void bookAService(String objectName, String objectDescription, int objectDimension,
-                             int pickUpPincode, int dropPincode, Long customerNumber, double requestedRatings) {
-        List<Rider> riderList = db.getRiders(pickUpPincode,dropPincode);
-        if (riderList.size() > 0) {
-            List<Rider> eligibleRiders = new ArrayList<>();
-            for (Rider rider:riderList) {
-                if (rider.getRatings()>requestedRatings)
-                    eligibleRiders.add(rider);
-            }if (eligibleRiders.size() > 0){
-                Random random = new Random();
-                int riderIndex = random.nextInt(riderList.size());
-                Rider assignedRider = riderList.get(riderIndex);
-                if(checkObjectEligibility(objectName,objectDimension)){
-                    Job job = new Job(objectName, objectDescription, objectDimension,
-                            customerNumber, pickUpPincode, dropPincode, assignedRider.getPhoneNumber());
-                    assignedRider.addJob(job);
-                    db.addJobs(job);
-                    db.addToCurrentlyRunningJobs(job, assignedRider.getPhoneNumber());
-                    sendBookingNotification(customerNumber, assignedRider.getPhoneNumber());
-                }
-                else {
-                    System.err.println("Object cannot be transferred!!");
-                }
-            }
-            else {
-                System.out.println("No riders available with that specific rating in that location.");
-            }
-        } else {
+    public boolean bookAService(String objectName, String objectDescription, int objectDimension,
+                                int pickUpPincode, int dropPincode, Long customerNumber, double requestedRatings) {
+        List<Rider> riderList = db.getRiders(pickUpPincode, dropPincode);
+        if (riderList.size() == 0) {
             System.out.println("No riders available near your location.");
+            return false;
         }
+        List<Rider> eligibleRiders = new ArrayList<>();
+        for (Rider rider : riderList) {
+            if (rider.getRatings() >= requestedRatings)
+                eligibleRiders.add(rider);
+        }
+        if (eligibleRiders.size() == 0) {
+            System.out.println("No riders available with that specific rating in that location.");
+            return false;
+        }
+        Random random = new Random();
+        int riderIndex = random.nextInt(riderList.size());
+        Rider assignedRider = riderList.get(riderIndex);
+        if (!checkObjectEligibility(objectName, objectDimension)) {
+            System.err.println("Object cannot be transferred!!");
+            return false;
+        }
+        Job job = new Job(objectName, objectDescription, objectDimension,
+                customerNumber, pickUpPincode, dropPincode, assignedRider.getPhoneNumber());
+        assignedRider.addJob(job);
+        db.addJobs(job);
+        db.addToCurrentlyRunningJobs(job, assignedRider.getPhoneNumber());
+        sendBookingNotification(customerNumber, assignedRider.getPhoneNumber(), job);
+        return true;
+    }
+
+    @Override
+    public List<Job> getJobDetails(Long phoneNumber) {
+        List<Job> jobs = new ArrayList<>(db.getCurrentlyRunningJobs().values());
+        List<Job> CurrentJobs = new ArrayList<>();
+        for (Job job : jobs) {
+            if (job.customerNumber.equals(phoneNumber) || job.riderNumber.equals(phoneNumber)) {
+                CurrentJobs.add(job);
+            }
+        }
+        return CurrentJobs;
+    }
+
+    @Override
+    public double estimatedPrice(int pickUpCode, int dropPincode, int objectDimension, int rating) {
+        switch (rating) {
+            case 1:
+                return feeCalculator(pickUpCode, dropPincode, objectDimension, 100);
+            case 2:
+                return feeCalculator(pickUpCode, dropPincode, objectDimension, 250);
+            case 3:
+                return feeCalculator(pickUpCode, dropPincode, objectDimension, 400);
+            case 4:
+                return feeCalculator(pickUpCode, dropPincode, objectDimension, 750);
+            case 5:
+                return feeCalculator(pickUpCode, dropPincode, objectDimension, 1000);
+            default:
+                return feeCalculator(pickUpCode, dropPincode, objectDimension, 50);
+        }
+    }
+
+    private double feeCalculator(int pickUpPincode, int dropPincode, int objectDimension, double riderFee) {
+        double ratePerKm = 12;
+        if (objectDimension <= 500) {
+            ratePerKm = 4;
+        } else if (objectDimension <= 1000) {
+            ratePerKm = 5;
+        } else if (objectDimension <= 1500) {
+            ratePerKm = 7;
+        } else if (objectDimension <= 2000) {
+            ratePerKm = 9;
+        }
+        double actualPrice = ((pickUpPincode - dropPincode) * ratePerKm + riderFee);
+        System.out.println("Estimated Total price: Rs." + actualPrice);
+        return actualPrice;
     }
 
     @Override
     public void changeJobState(Job job, String state) {
         job.setObjectState(state);
+        if (state.equals("Delivered")) {
+            freeRider(job.riderNumber);
+            db.getCurrentlyRunningJobs().remove(job.riderNumber);
+        }
+    }
+
+    private void freeRider(Long phoneNumber) {
+        Rider rider = (Rider) db.getUsers().get(phoneNumber);
+        rider.setCurrentJob(null);
+        rider.setAvailable(true);
     }
 
     @Override
     public void changeJobState(Job job, String state, String reason) {
         job.setObjectState(state);
         sendCancelNotification(job, reason);
+        freeRider(job.riderNumber);
+        db.getCurrentlyRunningJobs().remove(job.riderNumber);
     }
 
-    private void sendBookingNotification(Long customerNumber, Long riderNumber) {
+    private void sendBookingNotification(Long customerNumber, Long riderNumber, Job job) {
         db.getUsers().get(customerNumber).pushNotification(new Notification()
                 .setNotificationMessage(db.getUsers().get(riderNumber).getName()
-                        + " is the rider for your service.\nRider details:\n" + db.getUsers().get(riderNumber)));
+                        + " is the rider for your service.\nRider details:\n" + db.getUsers().get(riderNumber) + "\n Job Details:\n"
+                        + job.toString() + "\nNOTE: To check the job status enter your job ID and your CUSTOMER ID!!"));
         db.getUsers().get(customerNumber).pushNotification(new Notification()
                 .setNotificationMessage(db.getUsers().get(customerNumber).getName()
                         + " is the Customer who booked the service.\nCustomer details:\n"

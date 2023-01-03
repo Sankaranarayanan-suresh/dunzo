@@ -3,8 +3,6 @@ package com.application;
 import com.users.applicant.Applicant;
 import com.users.Users;
 import com.users.rider.Rider;
-
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;

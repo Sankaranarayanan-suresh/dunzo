@@ -16,7 +16,7 @@ public class Rider extends Users {
         return serviceLocation;
     }
 
-    private boolean available;
+    private boolean available = true;
     private double ratings;
 
     public double getRatings() {
@@ -119,32 +119,34 @@ public class Rider extends Users {
             System.out.println(jobs + "\n");
         }
     }
+
+    public void setAvailable(boolean available) {
+        this.available = available;
+    }
+
     private void viewJob() {
         try {
             System.out.println(currentJob.toString());
+            System.out.println("1.Change state of the object\n2.Exit");
+            int riderDecision = Utils.getInteger();
+            if(riderDecision == 1){
+                System.out.println("1.Picked-Up\n2.Delivered\n3.Not delivered");
+                int objectState = Utils.getInteger();
+                if (objectState == 1){
+                    riderRequest.changeJobState(currentJob,"Picked-Up");
+                } else if (objectState == 2) {
+                    riderRequest.changeJobState(currentJob,"Delivered");
+                }
+                else if (objectState == 3){
+                    System.out.println("State the exact reason: ");
+                    String reason = new Scanner(System.in).nextLine();
+                    riderRequest.changeJobState(currentJob,"Not delivered",reason);
+                }
+            }
         }
         catch (NullPointerException e){
             System.out.println("Currently You have no jobs to complete.");
         }
-        System.out.println("1.Change state of the object\n2.Exit");
-        int riderDecision = Utils.getInteger();
-        if(riderDecision == 1){
-            System.out.println("1.Picked-Up\n2.Delivered\n3.Not delivered");
-            int objectState = Utils.getInteger();
-            if (objectState == 1){
-                riderRequest.changeJobState(currentJob,"Picked-Up");
-            } else if (objectState == 2) {
-                riderRequest.changeJobState(currentJob,"Delivered");
-            }
-            else if (objectState == 3){
-                System.out.println("State the exact reason: ");
-                String reason = new Scanner(System.in).nextLine();
-                riderRequest.changeJobState(currentJob,"Not delivered",reason);
-            }
-        }
-
-        System.out.println(currentJob.toString());
-
     }
     private void cancelJob() {
         riderRequest.cancelJob(this.getPhoneNumber(),this.currentJob);

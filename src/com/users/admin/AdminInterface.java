@@ -1,5 +1,6 @@
 package com.users.admin;
 
+import com.application.Application;
 import com.application.UserInterface;
 import com.users.applicant.Applicant;
 import com.users.rider.Rider;
@@ -11,4 +12,5 @@ public interface AdminInterface extends UserInterface {
      String removeRiderFromDatabase(Rider rider);
      List<Applicant> getAllApplicants();
      List<Rider> getAllRiders();
+     void removeApplicant(Applicant applicant);
 }
