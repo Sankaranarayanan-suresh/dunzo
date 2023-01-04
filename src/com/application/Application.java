@@ -15,11 +15,17 @@ import java.util.Scanner;
 public class Application implements ApplicationInterface {
     Database db;
     Admin admin;
+    Customer customer;
+    Rider rider;
 
     public Application() {
         this.db = Database.getInstance();
         this.admin = new Admin("sankar", 1234567890L, "qwerty", this);
+        this.customer = new Customer("shiva",9876543211L,"asdad",this);
+        this.rider = new Rider("shakthi",1234567888L,"Aafdf",1,this);
         db.addUser(admin, "0000");
+        db.addUser(customer,"0000");
+        db.addUser(rider,"0000");
     }
 
     public void open(String user) {
@@ -48,14 +54,14 @@ public class Application implements ApplicationInterface {
                         String password = new Scanner(System.in).nextLine();
                         System.out.println("Re-Enter your password: ");
                         String reenteredPassword = new Scanner(System.in).nextLine();
-                        if (password.equals(reenteredPassword)) {
-                            customer = new Customer(name, phoneNumber, mail, this);
-                            db.addUser(customer, password);
-                            System.out.println("\n\nSignUp Successful!!");
-                            break;
-                        } else {
+                        if (!password.equals(reenteredPassword)) {
                             System.err.println("Password Mismatch");
+                            continue;
                         }
+                        customer = new Customer(name, phoneNumber, mail, this);
+                        db.addUser(customer, password);
+                        System.out.println("\n\nSignUp Successful!!");
+                        break;
                     }
 
                 } else if (preference == 2) {
@@ -224,14 +230,6 @@ public class Application implements ApplicationInterface {
     public void changeName(long phoneNumber, String newName) {
         db.getUsers().get(phoneNumber).setName(newName);
     }
-
-    @Override
-    public void changePhoneNumber(long oldPhoneNumber, long newPhoneNumber) {
-        db.getUsers().get(oldPhoneNumber).setPhoneNumber(newPhoneNumber);
-        db.getUsers().put(newPhoneNumber, db.getUsers().remove(oldPhoneNumber));
-        db.getUsersCredentials().put(newPhoneNumber, db.getUsersCredentials().remove(oldPhoneNumber));
-    }
-
     @Override
     public void changePassword(String oldPassword, String newPassword, long phoneNumber) {
         if (checkCredentials(phoneNumber, oldPassword)) {
@@ -244,7 +242,7 @@ public class Application implements ApplicationInterface {
 
     @Override
     public boolean bookAService(String objectName, String objectDescription, int objectDimension,
-                                int pickUpPincode, int dropPincode, Long customerNumber) {
+                                int pickUpPincode, int dropPincode, Long customerNumber,String pickUpAddress,String dropAddress) {
         List<Rider> riderList = db.getRiders(pickUpPincode, dropPincode);
         if (riderList.size() == 0) {
             System.out.println("No riders available");
@@ -255,27 +253,31 @@ public class Application implements ApplicationInterface {
         int riderIndex = random.nextInt(riderList.size());
         Rider assignedRider = riderList.get(riderIndex);
 
-        if (!checkObjectEligibility(objectName.toLowerCase(), objectDimension)) {
+        if (checkObjectEligibility(objectName.toLowerCase())) {
             System.err.println("Object cannot be transferred!!");
             return false;
         }
 
         Job job = new Job(objectName, objectDescription, objectDimension,
-                customerNumber, pickUpPincode, dropPincode, assignedRider.getPhoneNumber());
+                customerNumber, pickUpPincode, dropPincode, assignedRider.getPhoneNumber(),pickUpAddress,dropAddress);
         assignedRider.addJob(job);
         db.addJobs(job);
         db.addToCurrentlyRunningJobs(job, assignedRider.getPhoneNumber());
         sendBookingNotification(customerNumber, assignedRider.getPhoneNumber(), job);
+        Customer customer = (Customer) db.getUsers().get(customerNumber);
+        double customerRating = customer.requestRating();
+        Rider rider = (Rider) db.getUsers().get(assignedRider.getPhoneNumber());
+        rider.setRatings((customerRating/100)*5);
         return true;
     }
 
-    private boolean checkObjectEligibility(String objectName, int objectDimension) {
-        return !db.getNonTransferableThings().contains(objectName) && objectDimension <= 1000;
+    private boolean checkObjectEligibility(String objectName) {
+        return db.getNonTransferableThings().contains(objectName);
     }
 
     @Override
     public boolean bookAService(String objectName, String objectDescription, int objectDimension,
-                                int pickUpPincode, int dropPincode, Long customerNumber, double requestedRatings) {
+                                int pickUpPincode, int dropPincode, Long customerNumber, double requestedRatings,String pickUpAddress,String dropAddress) {
         List<Rider> riderList = db.getRiders(pickUpPincode, dropPincode);
         if (riderList.size() == 0) {
             System.out.println("No riders available near your location.");
@@ -293,12 +295,12 @@ public class Application implements ApplicationInterface {
         Random random = new Random();
         int riderIndex = random.nextInt(riderList.size());
         Rider assignedRider = riderList.get(riderIndex);
-        if (!checkObjectEligibility(objectName, objectDimension)) {
+        if (checkObjectEligibility(objectName)) {
             System.err.println("Object cannot be transferred!!");
             return false;
         }
         Job job = new Job(objectName, objectDescription, objectDimension,
-                customerNumber, pickUpPincode, dropPincode, assignedRider.getPhoneNumber());
+                customerNumber, pickUpPincode, dropPincode, assignedRider.getPhoneNumber(),pickUpAddress,dropAddress);
         assignedRider.addJob(job);
         db.addJobs(job);
         db.addToCurrentlyRunningJobs(job, assignedRider.getPhoneNumber());
@@ -347,7 +349,7 @@ public class Application implements ApplicationInterface {
         } else if (objectDimension <= 2000) {
             ratePerKm = 9;
         }
-        double actualPrice = ((pickUpPincode - dropPincode) * ratePerKm + riderFee);
+        double actualPrice = ((Math.abs((pickUpPincode - dropPincode)) * ratePerKm )+ riderFee);
         System.out.println("Estimated Total price: Rs." + actualPrice);
         return actualPrice;
     }
@@ -358,6 +360,8 @@ public class Application implements ApplicationInterface {
         if (state.equals("Delivered")) {
             freeRider(job.riderNumber);
             db.getCurrentlyRunningJobs().remove(job.riderNumber);
+            sendTaskCompleteNotification(job.customerNumber,job.riderNumber,job);
+
         }
     }
 
@@ -379,11 +383,18 @@ public class Application implements ApplicationInterface {
         db.getUsers().get(customerNumber).pushNotification(new Notification()
                 .setNotificationMessage(db.getUsers().get(riderNumber).getName()
                         + " is the rider for your service.\nRider details:\n" + db.getUsers().get(riderNumber) + "\n Job Details:\n"
-                        + job.toString() + "\nNOTE: To check the job status enter your job ID and your CUSTOMER ID!!"));
-        db.getUsers().get(customerNumber).pushNotification(new Notification()
+                        + job.toString()));
+        db.getUsers().get(riderNumber).pushNotification(new Notification()
                 .setNotificationMessage(db.getUsers().get(customerNumber).getName()
                         + " is the Customer who booked the service.\nCustomer details:\n"
                         + db.getUsers().get(customerNumber)));
+    }
+    private void sendTaskCompleteNotification(Long customerNumber, Long riderNumber, Job job) {
+        db.getUsers().get(customerNumber).pushNotification(new Notification()
+                .setNotificationMessage("The item has been successfully picked up from "+ job.pickUpAddress +" and delivered to " +
+                        job.dropAddress + " by "+ db.getUsers().get(riderNumber).getName()));
+        db.getUsers().get(customerNumber).pushNotification(new Notification()
+                .setNotificationMessage("Your Ride has been completed."));
     }
 
     private void sendCancelNotification(String riderName, Job job) {
@@ -417,6 +428,8 @@ public class Application implements ApplicationInterface {
         private final Long riderNumber;
         private final int pickupLocation;
         private final int dropLocation;
+        private final String pickUpAddress;
+        private final String dropAddress;
 
         public int getJobId() {
             return jobId;
@@ -439,7 +452,7 @@ public class Application implements ApplicationInterface {
         }
 
         private Job(String objectName, String objectDescription, int objectDimension,
-                    Long customerNumber, int pickupLocation, int dropLocation, Long riderNumber) {
+                    Long customerNumber, int pickupLocation, int dropLocation, Long riderNumber, String pickUpAddress, String dropAddress) {
             this.jobId = this.hashCode();
             this.objectName = objectName;
             this.objectDescription = objectDescription;
@@ -449,7 +462,12 @@ public class Application implements ApplicationInterface {
             this.riderNumber = riderNumber;
             this.pickupLocation = pickupLocation;
             this.dropLocation = dropLocation;
+            this.pickUpAddress = pickUpAddress;
+            this.dropAddress = dropAddress;
         }
 
+        public String getObjectState() {
+            return objectState;
+        }
     }
 }

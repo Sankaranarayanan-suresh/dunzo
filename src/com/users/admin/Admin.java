@@ -4,8 +4,6 @@ import com.users.applicant.Applicant;
 import com.users.Users;
 import com.users.rider.Rider;
 import com.utils.Utils;
-
-import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Admin extends Users {
@@ -20,8 +18,8 @@ public class Admin extends Users {
     public void editProfile() {
         editProfile:
         while (true) {
-            System.out.println("1.Change Name\n2.Change Phone number\n3.Change Mail-ID\n" +
-                    "4.Change password\n5.Go back to main-menu");
+            System.out.println("1.Change Name\n2.Change Mail-ID\n" +
+                    "3.Change password\n4.Go back to main-menu");
             int editProfilePreference = Utils.getInteger();
             switch (editProfilePreference) {
                 case 1:
@@ -31,23 +29,12 @@ public class Admin extends Users {
                     System.out.println("Your name has been changed successfully:)");
                     break;
                 case 2:
-                    System.err.println("Changing your Phone number can affect your LOGIN credentials too!\n" +
-                            "Do you want to continue? (y/n)");
-                    String confirmation = new Scanner(System.in).nextLine();
-                    if (confirmation.equalsIgnoreCase("y")) {
-                        System.out.print("Enter your new Phone number: ");
-                        long newPhoneNumber = Utils.getPhoneNumber();
-                        adminRequest.changePhoneNumber(this.getPhoneNumber(), newPhoneNumber);
-                        System.out.println("Your Phone number has been successfully changed:)");
-                    }
-                    break;
-                case 3:
                     System.out.print("Enter you new Email-ID: ");
                     String newMailId = new Scanner(System.in).nextLine();
                     adminRequest.changeMailID(this.getPhoneNumber(), newMailId);
                     System.out.println("Your EmailId has been changed successfully:)");
                     break;
-                case 4:
+                case 3:
                     System.err.println("Changing your Password can affect your LOGIN credentials too!\n" +
                             "Do you want to continue? (y/n)");
                     String passwordConfirmation = new Scanner(System.in).nextLine();
@@ -58,7 +45,7 @@ public class Admin extends Users {
                         String newPassword = new Scanner(System.in).nextLine();
                         adminRequest.changePassword(oldPassword, newPassword, this.getPhoneNumber());
                     }
-                case 5:
+                case 4:
                     break editProfile;
 
             }
@@ -72,14 +59,19 @@ public class Admin extends Users {
 
     private void addRider() {
         if (adminRequest.getAllApplicants().size() > 0) {
+            int i = 0;
             System.out.println(adminRequest.getAllApplicants().size());
             while (!adminRequest.getAllApplicants().isEmpty()) {
-                Applicant applicant = adminRequest.getAllApplicants().get(0);
+                if (i >= adminRequest.getAllApplicants().size())
+                    break;
+                Applicant applicant = adminRequest.getAllApplicants().get(i);
                 System.out.println(applicant);
                 System.out.println("1.Add to rider database\n2.Remove from the list\n3.Skip");
                 int adminDecision = Utils.getInteger();
-                if (adminDecision == 3)
+                if (adminDecision == 3) {
+                    i++;
                     continue;
+                }
                 if (adminDecision == 1) {
                     adminRequest.addRiderToDatabase(applicant);
                     System.out.println("Rider Added to database.");

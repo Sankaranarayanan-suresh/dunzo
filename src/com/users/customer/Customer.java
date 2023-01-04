@@ -60,7 +60,7 @@ public class Customer extends Users {
 
         System.out.println("Do you need any specific rating for the rider?(y/n)");
         double rating = 0;
-        double actualPrice = 0;
+        double actualPrice;
         String ratingPreference = new Scanner(System.in).nextLine();
         if (ratingPreference.equalsIgnoreCase("y")) {
             System.out.println("Enter minimum rating: ");
@@ -74,7 +74,7 @@ public class Customer extends Users {
         String confirmBooking = new Scanner(System.in).nextLine();
         if (confirmBooking.equalsIgnoreCase("y") && ratingPreference.equalsIgnoreCase("y")) {
             if (customerRequest.bookAService(objectName, objectDescription, objectDimension,
-                    pickUpPincode, dropPincode, this.getPhoneNumber(), rating)){
+                    pickUpPincode, dropPincode, this.getPhoneNumber(), rating,pickUpAddress,dropAddress)){
                 System.out.println("Initializing Payment process...");
                 try {
                     Thread.sleep(200);
@@ -85,7 +85,7 @@ public class Customer extends Users {
             }
         } else if (confirmBooking.equalsIgnoreCase("y")) {
             if ( customerRequest.bookAService(objectName, objectDescription, objectDimension,
-                    pickUpPincode, dropPincode, this.getPhoneNumber())){
+                    pickUpPincode, dropPincode, this.getPhoneNumber(),pickUpAddress,dropAddress)){
                 System.out.println("Initializing Payment process...");
                 try {
                     Thread.sleep(200);
@@ -96,7 +96,9 @@ public class Customer extends Users {
             }
         }
     }
-
+    public double requestRating(){
+        return Utils.getRatings();
+    }
     private void payment(double actualAmount) {
         System.out.print("Enter the amount: Rs.");
         double amount = Utils.getAmount();
@@ -121,8 +123,8 @@ public class Customer extends Users {
     public void editProfile() {
         editProfile:
         while (true) {
-            System.out.println("1.Change Name\n2.Change Phone number\n3.Change Mail-ID\n" +
-                    "4.Change password\n5.Go back to main-menu");
+            System.out.println("1.Change Name\n2.Change Mail-ID\n" +
+                    "3.Change password\n4.Go back to main-menu");
             int editProfilePreference = Utils.getInteger();
             switch (editProfilePreference) {
                 case 1:
@@ -132,23 +134,12 @@ public class Customer extends Users {
                     System.out.println("Your name has been changed successfully:)");
                     break;
                 case 2:
-                    System.err.println("Changing your Phone number can affect your LOGIN credentials too!\n" +
-                            "Do you want to continue? (y/n)");
-                    String confirmation = new Scanner(System.in).nextLine();
-                    if (confirmation.equalsIgnoreCase("y")) {
-                        System.out.print("Enter your new Phone number: ");
-                        long newPhoneNumber = Utils.getPhoneNumber();
-                        customerRequest.changePhoneNumber(this.getPhoneNumber(), newPhoneNumber);
-                        System.out.println("Your Phone number has been successfully changed:)");
-                    }
-                    break;
-                case 3:
                     System.out.print("Enter you new Email-ID: ");
                     String newMailId = new Scanner(System.in).nextLine();
                     customerRequest.changeMailID(this.getPhoneNumber(), newMailId);
                     System.out.println("Your EmailId has been changed successfully:)");
                     break;
-                case 4:
+                case 3:
                     System.err.println("Changing your Password can affect your LOGIN credentials too!\n" +
                             "Do you want to continue? (y/n)");
                     String passwordConfirmation = new Scanner(System.in).nextLine();
@@ -159,7 +150,7 @@ public class Customer extends Users {
                         String newPassword = new Scanner(System.in).nextLine();
                         customerRequest.changePassword(oldPassword, newPassword, this.getPhoneNumber());
                     }
-                case 5:
+                case 4:
                     break editProfile;
 
             }
