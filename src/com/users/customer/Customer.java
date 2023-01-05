@@ -60,14 +60,15 @@ public class Customer extends Users {
 
         System.out.println("Do you need any specific rating for the rider?(y/n)");
         double rating = 0;
-        double actualPrice;
+        double actualPrice = 0;
         String ratingPreference = new Scanner(System.in).nextLine();
         if (ratingPreference.equalsIgnoreCase("y")) {
             System.out.println("Enter minimum rating: ");
             rating = Utils.getRatings();
             actualPrice = customerRequest.estimatedPrice(pickUpPincode,dropPincode,objectDimension,(int) rating);
         }
-        else {
+        else if (ratingPreference.equalsIgnoreCase("n")){
+            System.out.println("jhh");
             actualPrice = customerRequest.estimatedPrice(pickUpPincode, dropPincode, objectDimension, 0);
         }
         System.out.println("Confirm Booking?(y/n)");
@@ -83,7 +84,7 @@ public class Customer extends Users {
                 }
                 payment(actualPrice);
             }
-        } else if (confirmBooking.equalsIgnoreCase("y")) {
+        } else if (confirmBooking.equalsIgnoreCase("y") && ratingPreference.equalsIgnoreCase("n")) {
             if ( customerRequest.bookAService(objectName, objectDescription, objectDimension,
                     pickUpPincode, dropPincode, this.getPhoneNumber(),pickUpAddress,dropAddress)){
                 System.out.println("Initializing Payment process...");
@@ -102,11 +103,14 @@ public class Customer extends Users {
     private void payment(double actualAmount) {
         System.out.print("Enter the amount: Rs.");
         double amount = Utils.getAmount();
-        if (amount != actualAmount) {
-            System.err.println("Incorrect amount!!!!");
-            payment(actualAmount);
+        if (amount == actualAmount) {
+            System.out.println("Payment Successful:)");
+            return;
         }
-        System.out.println("Payment Successful:)");
+        System.err.println("Incorrect amount!!!!");
+        System.out.println();
+        payment(actualAmount);
+
     }
 
 

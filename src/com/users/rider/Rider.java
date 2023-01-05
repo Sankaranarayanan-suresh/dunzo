@@ -155,7 +155,7 @@ public class Rider extends Users {
     }
 
     private void cancelJob() {
-        if (this.currentJob != null) {
+        if (this.currentJob == null) {
             System.out.println("You have no job.");
             return;
         }

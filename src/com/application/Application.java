@@ -265,9 +265,6 @@ public class Application implements ApplicationInterface {
         db.addToCurrentlyRunningJobs(job, assignedRider.getPhoneNumber());
         sendBookingNotification(customerNumber, assignedRider.getPhoneNumber(), job);
         Customer customer = (Customer) db.getUsers().get(customerNumber);
-        double customerRating = customer.requestRating();
-        Rider rider = (Rider) db.getUsers().get(assignedRider.getPhoneNumber());
-        rider.setRatings((customerRating/100)*5);
         return true;
     }
 
@@ -277,7 +274,8 @@ public class Application implements ApplicationInterface {
 
     @Override
     public boolean bookAService(String objectName, String objectDescription, int objectDimension,
-                                int pickUpPincode, int dropPincode, Long customerNumber, double requestedRatings,String pickUpAddress,String dropAddress) {
+                                int pickUpPincode, int dropPincode, Long customerNumber,
+                                double requestedRatings,String pickUpAddress,String dropAddress) {
         List<Rider> riderList = db.getRiders(pickUpPincode, dropPincode);
         if (riderList.size() == 0) {
             System.out.println("No riders available near your location.");
@@ -361,6 +359,9 @@ public class Application implements ApplicationInterface {
             freeRider(job.riderNumber);
             db.getCurrentlyRunningJobs().remove(job.riderNumber);
             sendTaskCompleteNotification(job.customerNumber,job.riderNumber,job);
+            double customerRating = customer.requestRating();
+            Rider rider = (Rider) db.getUsers().get(job.riderNumber);
+            rider.setRatings((customerRating/100)*5);
 
         }
     }
